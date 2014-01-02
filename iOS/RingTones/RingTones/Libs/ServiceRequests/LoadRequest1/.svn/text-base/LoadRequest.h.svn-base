@@ -1,0 +1,90 @@
+//
+//  LoadRequest.h
+//  HeinikenLAC
+//
+//  Created by Vuong Nguyen on 5/27/13.
+//  Copyright (c) 2013 Bizzon Limited Company. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+#import "ASIHTTPRequest.h"
+#import "ASIFormDataRequest.h"
+#import "SBJson2.h"
+#import "Common.h"
+#import "Model.h"
+#import "RegisterField.h"
+//--Delegate call back when requesr didload
+@protocol LoadRequestDelegate <NSObject>
+
+@optional
+
+//--Get Token
+//--Post Register
+-(void) finished_PostInfoResigter:(NSDictionary *) data;
+-(void) failed_PostInfoResigter;
+-(void) failed_PostInfoResigterIfHaveMessage:(NSDictionary *) data;
+
+
+//-- check public user
+-(void) finished_CheckPublicUser:(NSDictionary *) data;
+-(void) failed_CheckPublicUser;
+
+//-- update device token
+-(void) finished_UpdateDeviceToken:(NSDictionary *) data;
+-(void) failed_UpdateDeviceToken;
+
+
+// request get news
+-(void) finished_RequestGetNews:(NSDictionary *) data;
+-(void) failed_RequestGetNews;
+
+// request get Detail
+-(void) finished_RequestGetNewsDetail:(NSDictionary *) data;
+-(void) failed_RequestGetNewsDetail;
+
+
+
+
+@end
+
+
+/////////////////////////////////////////////////////
+//--load data from internet
+
+@interface LoadRequest : NSObject
+{
+
+    NSMutableArray *listRequest;
+    
+}
+@property (nonatomic, assign) id delegate;
+@property (nonatomic, strong) NSMutableArray *listRequest;
+
+
+
+//--release LoadRequest
+-(void) releaseLoadRequest;
+
+// request Post Info Resigter
+-(void) requestPostInfoResigter:(RegisterField *) fieldStruct;
+
+
+//-- check public user
+-(void) checkPublicUser:(NSString *) fbuid;
+
+//-- update device token
+-(void) updateDeviceTokenWithFbToken:(NSString *)fb_token;
+
+
+
+// request get news
+-(void) requestGetNews:(int) number;
+
+
+
+// request get Detail
+-(void) requestGetNewsDetail:(int) newId;
+
+
+@end

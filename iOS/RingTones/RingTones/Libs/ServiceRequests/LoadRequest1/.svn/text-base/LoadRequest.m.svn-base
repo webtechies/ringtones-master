@@ -1,0 +1,387 @@
+//
+//  LoadRequest.m
+//  HeinikenLAC
+//
+//  Created by Vuong Nguyen on 5/27/13.
+//  Copyright (c) 2013 Bizzon Limited Company. All rights reserved.
+//
+
+#import "LoadRequest.h"
+
+#define kTimeOutSeconds 180
+
+#define kLinkServices @"http://socialapps.vn/vff/api/services/"
+//#define kLinkServices @"http://192.168.1.254/vff/api/services"
+
+
+@implementation LoadRequest
+@synthesize listRequest;
+
+
+// Tag of Request
+enum
+{
+    TAG_Register = 0,
+    TAG_CheckPublicUse = 1,
+    TAG_UpdateDeviceToken = 2,
+    TAG_GetNews = 3,
+    TAG_GetNewsDetail = 4,
+
+};
+
+
+@synthesize delegate;
+
+
+
+- (id)init {
+    self = [super init];
+    if (self) {
+        if (!listRequest)
+        {
+            listRequest = [[NSMutableArray alloc] init];
+        }
+        
+        
+    }
+    return self;
+}
+
+
+-(void) releaseLoadRequest
+{
+    
+    for (ASIFormDataRequest *request in listRequest)
+    {
+        [request cancel];
+        [request clearDelegatesAndCancel];
+    }
+}
+
+
+//------------------------------------------------
+-(NSDictionary *) parsejSonStringFromRequest:(ASIHTTPRequest *) request
+{
+    // Error if can not submit to server
+    NSError *error = [request error];
+    if (error)
+    {
+        
+        return nil;
+    }
+    
+    // PARSE DATA
+    NSString *responseString = [request responseString];
+    NSDictionary *json = [responseString JSONValue];
+#ifdef DEBUG
+     NSLog(@"jSon: %@", responseString);
+   // NSLog(@"request: %@", request.url.absoluteString);
+#endif
+    if(!json)
+    {
+        //--NSLog(@"Can not parse response string from login request");
+        return nil;
+    }
+    
+    return json;
+}
+
+
+
+
+//--request Post Photo Share
+-(void) requestPostInfoResigter:(RegisterField *) data;
+{
+
+    NSString *urlRequest = [NSString stringWithFormat:@"%@/user/register",kLinkServices];
+    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:[NSURL URLWithString:urlRequest]];
+    
+    //NSLog(@"URL Request = %@", urlRequest);
+    
+    [request addPostValue:data.fb_uid forKey:@"fb_uid"];
+    [request addPostValue:data.fb_token forKey:@"fb_token"];
+    [request addPostValue:data.name forKey:@"name"];
+    [request addPostValue:data.gender forKey:@"gender"];
+    [request addPostValue:data.email forKey:@"email"];
+    [request addPostValue:data.system forKey:@"system"];
+    [request addPostValue:data.device_token forKey:@"device_token"];
+    [request addPostValue:data.isRegister forKey:@"isRegister"];
+    [request addPostValue:data.city forKey:@"city"];
+    [request addPostValue:data.phone forKey:@"phone"];
+    [request addPostValue:data.identify forKey:@"identify"];
+    [request addPostValue:data.address forKey:@"address"];
+    
+    
+    [request setRequestMethod:@"POST"];
+    [request setTag:TAG_Register];
+    [request setDelegate:self];
+    [request setTimeOutSeconds:kTimeOutSeconds];
+    [request startAsynchronous];
+    [listRequest addObject:request];
+}
+
+
+//-- check public user
+-(void) checkPublicUser:(NSString *) fbuid{
+    
+    NSString *urlRequest = [NSString stringWithFormat:@"%@/user/get",kLinkServices];
+    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:[NSURL URLWithString:urlRequest]];
+    
+    //NSLog(@"URL Request = %@", urlRequest);
+    
+    [request addPostValue:fbuid forKey:@"fb_uid"];
+    
+    
+    [request setRequestMethod:@"POST"];
+    [request setTag:TAG_CheckPublicUse];
+    [request setDelegate:self];
+    [request setTimeOutSeconds:kTimeOutSeconds];
+    [request startAsynchronous];
+    [listRequest addObject:request];
+
+}
+
+
+//-- update device token
+-(void) updateDeviceTokenWithFbToken:(NSString *)fb_token{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    id result = [defaults objectForKey:keyGetInfoFacebookUser];
+    NSString *device_token = [defaults valueForKey:@"keyGetDeviceToken"];
+    
+    NSString *urlRequest = [NSString stringWithFormat:@"%@/user/get",kLinkServices];
+    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:[NSURL URLWithString:urlRequest]];
+    
+    //NSLog(@"URL Request = %@", urlRequest);
+    
+    [request addPostValue:[result objectForKey:@"id"] forKey:@"fb_uid"];
+    [request addPostValue:device_token forKey:@"device_token"];
+    [request addPostValue:fb_token forKey:@"fb_token"];
+    [request addPostValue:@"iOS" forKey:@"system"];
+    
+    [request setRequestMethod:@"POST"];
+    [request setTag:TAG_UpdateDeviceToken];
+    [request setDelegate:self];
+    [request setTimeOutSeconds:kTimeOutSeconds];
+    [request startAsynchronous];
+    [listRequest addObject:request];
+
+}
+
+
+
+
+// request get news
+-(void) requestGetNews:(int) number
+{
+    NSString *urlRequest = [NSString stringWithFormat:@"%@/news/get",kLinkServices];
+    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:[NSURL URLWithString:urlRequest]];
+    
+    //NSLog(@"URL Request = %@", urlRequest);
+    
+    [request addPostValue:[NSString stringWithFormat:@"%d",number] forKey:@"page"];
+    
+    [request setRequestMethod:@"POST"];
+    [request setTag:TAG_GetNews];
+    [request setDelegate:self];
+    [request setTimeOutSeconds:kTimeOutSeconds];
+    [request startAsynchronous];
+    [listRequest addObject:request];
+
+
+}
+
+
+
+// request get Detail
+-(void) requestGetNewsDetail:(int) newId
+{
+    NSString *urlRequest = [NSString stringWithFormat:@"%@/news/detail",kLinkServices];
+    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:[NSURL URLWithString:urlRequest]];
+    
+    //NSLog(@"URL Request = %@", urlRequest);
+    
+
+    [request addPostValue:[NSString stringWithFormat:@"%d",newId] forKey:@"id"];
+    
+    [request setRequestMethod:@"POST"];
+    [request setTag:TAG_GetNewsDetail];
+    [request setDelegate:self];
+    [request setTimeOutSeconds:kTimeOutSeconds];
+    [request startAsynchronous];
+    [listRequest addObject:request];
+
+}
+
+// Request Finished
+- (void)requestFinished:(ASIHTTPRequest *)request
+{
+    
+    if (!self.delegate) return;
+    if (request) {
+        [listRequest removeObject:request];
+    }
+    
+    NSDictionary *dic = nil;
+    dic = [self parsejSonStringFromRequest:request];
+    //--NSLog(@"dic %@",dic);
+    @try
+    {
+        switch (request.tag)
+        {
+            case TAG_Register:
+            {
+                int status = [(NSString *) [dic valueForKey:@"status"] integerValue];
+                //NSLog(@"dic %@",dic);
+                
+                if (dic) // successed
+                {
+                    if (status == 0)
+                    {
+                        [self.delegate failed_PostInfoResigterIfHaveMessage:dic];
+                        break;
+                    }
+                     [self.delegate finished_PostInfoResigter:dic];
+                }
+                else // failed
+                {
+                    [self.delegate failed_PostInfoResigter];
+                }
+                
+                break;
+
+            }
+                
+            case TAG_CheckPublicUse:
+            {
+                //NSLog(@"dic %@",dic);
+                
+                if (dic) // successed
+                {
+  
+                    [self.delegate finished_CheckPublicUser:dic];
+                }
+                else // failed
+                {
+                     [self.delegate failed_CheckPublicUser];
+                }
+                
+                break;
+            }//-- endTAG_CheckPublicUse
+                
+            case TAG_UpdateDeviceToken:
+            {
+                //NSLog(@"dic %@",dic);
+                
+                if (dic) // successed
+                {
+                    
+                    [self.delegate finished_UpdateDeviceToken:dic];
+                }
+                else // failed
+                {
+                    [self.delegate failed_UpdateDeviceToken];
+                }
+                
+                break;
+            }//-- end TAG_UpdateDeviceToken
+                
+        
+            case TAG_GetNews:
+            {
+                //NSLog(@"dic %@",dic);
+                
+                if (dic) // successed
+                {
+                    
+                    [self.delegate finished_RequestGetNews:dic];
+                }
+                else // failed
+                {
+                    [self.delegate failed_RequestGetNews];
+                }
+                
+                break;
+            }//-- end TAG_GetNews
+                
+                
+            case TAG_GetNewsDetail:
+            {
+                //NSLog(@"dic %@",dic);
+                
+                if (dic) // successed
+                {
+                    
+                    [self.delegate finished_RequestGetNewsDetail:dic];
+                }
+                else // failed
+                {
+                    [self.delegate failed_RequestGetNewsDetail];
+                }
+                
+                break;
+            }//-- end TAG_GetNewsDetail
+
+        }
+    }
+    @catch (NSException *exception)
+    {
+        NSLog(@"exception.description = %@", exception.description);
+    }
+    @finally
+    {
+        
+    }
+    
+    
+}
+
+
+-(void) requestFailed:(ASIHTTPRequest *) request
+{
+    if (request) {
+        [listRequest removeObject:request];
+    }
+    NSDictionary *dic = nil;
+    dic = [self parsejSonStringFromRequest:request];
+    
+#if DEBUG
+    NSLog(@"dic %@",dic);
+#endif
+    switch (request.tag)
+    { 
+            // Get Top Comic Online
+        case TAG_Register:
+        {
+             [self.delegate failed_PostInfoResigter];
+            break;
+        }
+            
+        case TAG_CheckPublicUse:
+        {
+             [self.delegate failed_CheckPublicUser];
+            break;
+        }
+            
+        case TAG_UpdateDeviceToken:
+        {
+             [self.delegate failed_UpdateDeviceToken];
+            break;
+        }
+            
+        case TAG_GetNews:
+        {
+            [self.delegate failed_RequestGetNews];
+            break;
+        }
+            
+        case TAG_GetNewsDetail:
+        {
+            [self.delegate failed_RequestGetNewsDetail];
+            break;
+        }
+            
+    }
+}
+
+
+@end

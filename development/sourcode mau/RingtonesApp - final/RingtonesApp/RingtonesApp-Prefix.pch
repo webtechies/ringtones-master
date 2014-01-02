@@ -1,0 +1,20 @@
+//
+// Prefix header for all source files of the 'RingtonesApp' target in the 'RingtonesApp' project
+//
+
+#import <Availability.h>
+
+#ifndef __IPHONE_4_0
+#warning "This project uses features only available in iOS SDK 4.0 and later."
+#endif
+
+#ifdef __OBJC__
+    #import <UIKit/UIKit.h>
+    #import <Foundation/Foundation.h>
+#endif
+
+/////IMPORTANT NOTE: only 1 of 3 mode is active, 2 others have to be commented
+
+//#define kLiteVersion TRUE
+////#define kFreeVersion TRUE
+////#define kFullVersion TRUE
